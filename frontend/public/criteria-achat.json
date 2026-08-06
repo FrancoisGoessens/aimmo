@@ -1,0 +1,10 @@
+{
+  "zonesMinMinutes": 0,
+  "zonesMaxMinutes": 30,
+  "budgetMax": 250000,
+  "surfaceMin": 70,
+  "etageMax": "RDC ou 1er étage",
+  "jardin": true,
+  "parking": false,
+  "dpeMin": "D"
+}

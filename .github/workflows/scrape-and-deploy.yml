@@ -1,0 +1,92 @@
+name: Scrape & Deploy
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # lundi
+    - cron: "0 6 * * 3" # mercredi
+  workflow_dispatch:
+    inputs:
+      market:
+        description: "Marché à scraper"
+        type: choice
+        options: [both, achat, location]
+        default: both
+      budget_override:
+        description: "Surcharge ponctuelle du budget max (laisser vide pour ignorer)"
+        required: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install scraper deps
+        working-directory: ./scraper
+        run: npm install
+
+      - name: Run scraper
+        working-directory: ./scraper
+        env:
+          RUN_MARKET: ${{ github.event.inputs.market || 'both' }}
+          RUN_SOURCE: ${{ github.event_name == 'workflow_dispatch' && 'manual' || 'auto' }}
+          BUDGET_OVERRIDE_ACHAT: ${{ github.event.inputs.market == 'achat' && github.event.inputs.budget_override || '' }}
+          BUDGET_OVERRIDE_LOCATION: ${{ github.event.inputs.market == 'location' && github.event.inputs.budget_override || '' }}
+        run: npm run scrape
+
+      - name: Commit new bulletin(s)
+        run: |
+          git config user.name "aimmo-bot"
+          git config user.email "actions@github.com"
+          git add frontend/public/data/bulletins
+          git diff --staged --quiet || git commit -m "Nouveau bulletin $(date +'%Y-%m-%d %H:%M')"
+          git push
+
+  build-and-deploy:
+    needs: scrape
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (avec le commit du scraper)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install frontend deps
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./frontend/dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

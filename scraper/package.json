@@ -1,0 +1,14 @@
+{
+  "name": "aimmo-scraper",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "scrape": "node scrape.js",
+    "compute-communes": "node compute-communes.js"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "node-fetch": "^3.3.2"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "zonesMinMinutes": 0,
+  "zonesMaxMinutes": 25,
+  "budgetMax": 850,
+  "surfaceMin": 50,
+  "etageMax": 1,
+  "jardin": false,
+  "parking": true,
+  "dpeMin": "E"
+}
