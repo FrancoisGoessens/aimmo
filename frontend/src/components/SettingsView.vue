@@ -10,9 +10,10 @@ const props = defineProps<{ market: Market; criteria: MarketCriteria; leboncoinC
 const emit = defineEmits<{ saved: [criteria: MarketCriteria]; leboncoinSaved: [config: LeboncoinConfig] }>();
 
 const AGENCY_SOURCES = [
-  { id: "pap", label: "PAP.fr" },
   { id: "orpi", label: "Orpi" },
-  { id: "guy-hoquet", label: "Guy Hoquet" },
+  { id: "fnaim", label: "FNAIM.fr" },
+  { id: "square-habitat", label: "Square Habitat" },
+  { id: "foncia", label: "Foncia" },
 ];
 
 const form = ref<MarketCriteria>({ ...props.criteria, sources: props.criteria.sources ?? [] });

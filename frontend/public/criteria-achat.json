@@ -7,5 +7,10 @@
   "jardin": true,
   "parking": false,
   "dpeMin": "D",
-  "sources": ["pap", "orpi", "guy-hoquet"]
+  "sources": [
+    "orpi",
+    "fnaim",
+    "square-habitat",
+    "foncia"
+  ]
 }

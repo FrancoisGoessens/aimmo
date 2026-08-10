@@ -36,8 +36,7 @@ const DESTINATION = { lat: 50.9227, lng: 1.8058 };
 // veux couvrir plus large.
 // Coordonnées exactes pour Offrethun, Baincthun, Isques et Saint-Étienne-au-Mont
 // (Wikipédia) ; estimées pour Wacquinghen, Echinghen, Saint-Léonard et Pont-de-Briques
-// (pas trouvé de source avec coordonnées précises — Pont-de-Briques n'est même pas une
-// commune à part, c'est un hameau/gare rattaché à Saint-Étienne-au-Mont) — l'imprécision
+// (pas trouvé de source avec coordonnées précises) — l'imprécision
 // reste mineure, ORS raccroche de toute façon au réseau routier le plus proche
 // (radiuses ci-dessous).
 const CANDIDATES = [
@@ -57,9 +56,8 @@ const CANDIDATES = [
   { name: "Baincthun", lat: 50.7106, lng: 1.6811 },
   { name: "Echinghen", lat: 50.705, lng: 1.66 },
   { name: "Saint-Léonard", lat: 50.705, lng: 1.625 },
-    { name: "Isques", lat: 50.6767, lng: 1.6508 },
+  { name: "Isques", lat: 50.6767, lng: 1.6508 },
   { name: "Saint-Étienne-au-Mont", lat: 50.6822, lng: 1.6269 },
-  { name: "Pont-de-Briques", lat: 50.688, lng: 1.634 },
 ];
 
 async function drivingMinutes(from, to) {
