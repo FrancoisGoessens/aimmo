@@ -11,7 +11,6 @@ import { fileURLToPath } from "node:url";
 import * as orpi from "./sources/orpi.js";
 import * as fnaim from "./sources/fnaim.js";
 import * as squareHabitat from "./sources/square-habitat.js";
-import * as foncia from "./sources/foncia.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, "..", "frontend", "public");
@@ -22,7 +21,7 @@ const MAX_BULLETINS_KEPT = 60;
 const RUN_MARKET = process.env.RUN_MARKET || "both";
 const RUN_SOURCE = process.env.RUN_SOURCE === "manual" ? "manual" : "auto";
 
-const ADAPTERS = { [orpi.id]: orpi, [fnaim.id]: fnaim, [squareHabitat.id]: squareHabitat, [foncia.id]: foncia };
+const ADAPTERS = { [orpi.id]: orpi, [fnaim.id]: fnaim, [squareHabitat.id]: squareHabitat };
 
 async function loadCriteria(market) {
   const raw = await fs.readFile(path.join(PUBLIC_DIR, `criteria-${market}.json`), "utf-8");

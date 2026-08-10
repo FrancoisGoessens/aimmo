@@ -26,15 +26,24 @@ const REGION = "hauts-de-france";
 const DEPARTEMENT = "pas-de-calais";
 
 function extractListings(html, kind, city, pageUrl) {
-  const match = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
-  if (!match) return [];
+  // La page contient plusieurs blocs JSON-LD (organisation, fil d'Ariane, liste de
+  // biens...) — on doit trouver spécifiquement celui de type "ItemList", pas juste
+  // le premier du lot.
+  const matches = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
 
-  let data;
-  try {
-    data = JSON.parse(match[1]);
-  } catch {
-    return [];
+  let data = null;
+  for (const m of matches) {
+    try {
+      const parsed = JSON.parse(m[1]);
+      if (parsed["@type"] === "ItemList" && Array.isArray(parsed.itemListElement)) {
+        data = parsed;
+        break;
+      }
+    } catch {
+      // bloc JSON-LD mal formé ou pas pertinent, on continue à chercher
+    }
   }
+  if (!data) return [];
 
   const items = data.itemListElement || [];
   return items

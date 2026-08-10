@@ -13,7 +13,6 @@ const AGENCY_SOURCES = [
   { id: "orpi", label: "Orpi" },
   { id: "fnaim", label: "FNAIM.fr" },
   { id: "square-habitat", label: "Square Habitat" },
-  { id: "foncia", label: "Foncia" },
 ];
 
 const form = ref<MarketCriteria>({ ...props.criteria, sources: props.criteria.sources ?? [] });
