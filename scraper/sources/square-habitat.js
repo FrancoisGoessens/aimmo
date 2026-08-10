@@ -1,14 +1,22 @@
-// square-habitat.js — adaptateur Square Habitat (réseau Crédit Agricole, présence
-// confirmée directement sur ta zone : Boulogne-sur-Mer, Hardelot, Outreau, Desvres,
-// Saint-Martin-Boulogne, Le Portel...).
+// square-habitat.js — adaptateur Square Habitat (réseau Crédit Agricole).
 //
-// URL confirmée par recherche web directe (10/08) :
-// https://www.squarehabitat.fr/annonces/achat/bien/maison/immobilier/hauts-de-france/pas-de-calais/boulogne-sur-mer-62200
-// https://www.squarehabitat.fr/annonces/location/bien/maison/immobilier/hauts-de-france/pas-de-calais/boulogne-sur-mer-62200
-// region/département fixes ("hauts-de-france"/"pas-de-calais") vu que tout ton
-// secteur de recherche est dans ce coin — à adapter si un jour tu élargis ailleurs.
+// URL confirmée le 10/08 : voir plus bas. Contrairement aux autres sources, les
+// annonces ne sont PAS dans des cards HTML classiques mais dans un bloc
+// <script type="application/ld+json"> (structured data schema.org). Confirmé par un
+// vrai extrait fourni le 10/08.
+//
+// LIMITE IMPORTANTE, à avoir en tête : ce JSON-LD ne contient que le nom du bien et
+// son prix — PAS de lien direct vers l'annonce individuelle, PAS de surface, PAS de
+// DPE, PAS de jardin/parking. Conséquences concrètes :
+//   - Le lien "Voir l'annonce" pour un résultat Square Habitat renvoie vers la page
+//     de recherche générale, pas vers le bien précis (le site ne l'expose pas ici).
+//   - Le score calculé pour ces annonces est structurellement moins fiable : jardin/
+//     parking valent toujours "false" par manque de donnée (pas par absence réelle),
+//     ce qui les pénalise un peu à tort si ce critère compte pour toi.
+// Si cette limite te gêne trop à l'usage, le plus simple est de décocher cette source
+// dans Paramètres plutôt que de la debugger davantage — la donnée n'existe
+// simplement pas à cet endroit de la page.
 
-import * as cheerio from "cheerio";
 import { fetchHtml, slugify, wait, POSTAL_CODES } from "./_shared.js";
 
 export const id = "square-habitat";
@@ -17,32 +25,39 @@ export const label = "Square Habitat";
 const REGION = "hauts-de-france";
 const DEPARTEMENT = "pas-de-calais";
 
-function parseCard($, el, kind, city) {
-  const card = $(el);
-  const title = card.find("h2, h3, .card-title").first().text().trim();
-  const priceText = card.find(".price, .card-price").first().text().trim();
-  const link = card.find("a").first().attr("href");
-  const surfaceText = card.text().match(/(\d+)\s?m²/)?.[1];
-  const etageText = card.text().match(/(\d+)(?:er|ème|e)\s?étage/i)?.[1];
-  const price = priceText ? Number(priceText.replace(/[^\d]/g, "")) : null;
-  const surface = surfaceText ? Number(surfaceText) : null;
-  const etage = kind === "maison" ? null : etageText ? Number(etageText) : /rez.de.chauss/i.test(title) ? 0 : null;
+function extractListings(html, kind, city, pageUrl) {
+  const match = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+  if (!match) return [];
 
-  if (!title || !price) return null;
+  let data;
+  try {
+    data = JSON.parse(match[1]);
+  } catch {
+    return [];
+  }
 
-  return {
-    source: id,
-    type: kind,
-    city,
-    title,
-    price,
-    surface,
-    etage,
-    jardin: /jardin/i.test(card.text()),
-    parking: /(parking|garage|box)/i.test(card.text()),
-    dpe: card.text().match(/DPE\s?:?\s?([A-G])/i)?.[1] ?? null,
-    link: link?.startsWith("http") ? link : `https://www.squarehabitat.fr${link ?? ""}`,
-  };
+  const items = data.itemListElement || [];
+  return items
+    .map((entry) => entry.item)
+    .filter(Boolean)
+    .map((item) => {
+      const price = item.offers?.price ?? null;
+      if (price === null) return null;
+      return {
+        source: id,
+        type: kind,
+        city,
+        title: item.name || `${kind === "maison" ? "Maison" : "Appartement"} - ${city}`,
+        price,
+        surface: null, // absent du JSON-LD
+        etage: null, // absent du JSON-LD
+        jardin: false, // inconnu, pas "non" — voir limite en tête de fichier
+        parking: false, // idem
+        dpe: null,
+        link: pageUrl, // pas de lien par annonce disponible, on renvoie vers la recherche
+      };
+    })
+    .filter(Boolean);
 }
 
 export async function search(market, zones) {
@@ -58,15 +73,9 @@ export async function search(market, zones) {
       }
       const url = `https://www.squarehabitat.fr/annonces/${action}/bien/${kind}/immobilier/${REGION}/${DEPARTEMENT}/${slugify(city)}-${postal}`;
       console.log(`    [square-habitat] → ${url}`);
-      const html = await fetchHtml(url);
+      const html = await fetchHtml(url, 25000);
       if (html) {
-        const $ = cheerio.load(html);
-        $(".property-card, .listing-item, article, .result-item")
-          .toArray()
-          .forEach((el) => {
-            const parsed = parseCard($, el, kind, city);
-            if (parsed) listings.push(parsed);
-          });
+        listings.push(...extractListings(html, kind, city, url));
       }
       await wait();
     }

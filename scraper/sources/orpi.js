@@ -53,12 +53,15 @@ function parseCard($, el, kind, city) {
 }
 
 export async function search(market, zones) {
-  const type = market === "achat" ? "vente" : "location";
   const listings = [];
 
   for (const kind of ["maison", "appartement"]) {
     for (const city of zones) {
-      const url = `https://www.orpi.com/annonces-immobilieres-${slugify(city)}/${type}-${kind}/`;
+      const slug = slugify(city);
+      const url =
+        market === "achat"
+          ? `https://www.orpi.com/annonces-immobilieres-${slug}/vente-${kind}/`
+          : `https://www.orpi.com/location-immobiliere-${slug}/louer-${kind}/`;
       console.log(`    [orpi] → ${url}`);
       const html = await fetchHtml(url);
       if (html) {
