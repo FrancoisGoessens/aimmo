@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "scrape": "node scrape.js",
+    "scrape:leboncoin": "node scrape-leboncoin.js",
     "compute-communes": "node compute-communes.js"
   },
   "dependencies": {

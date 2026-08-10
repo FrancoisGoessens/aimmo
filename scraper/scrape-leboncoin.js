@@ -1,16 +1,14 @@
-// scrape.js — scraper "agences" (PAP, Orpi, Guy Hoquet — pas Leboncoin, voir
-// scrape-leboncoin.js). Tourne dans GitHub Actions, planifié lundi/mercredi, ou
-// déclenché à la demande. Lit frontend/public/criteria-<market>.json (dont le champ
-// `sources`, coché depuis Paramètres), n'interroge que les sites activés, merge et
-// score, écrit un bulletin JSON par marché dans
-// frontend/public/data/bulletins/agences/<market>/.
+// scrape-leboncoin.js — scraper Leboncoin, séparé de scrape.js volontairement (source
+// plus fragile côté anti-bot, jamais mélangée aux autres sites). Tourne uniquement à
+// la demande, ou 1x/semaine si activé dans frontend/public/leboncoin-config.json.
+// Réutilise les critères de filtre (budget, surface, zones, DPE...) des mêmes
+// criteria-<market>.json que le scraper agences, mais écrit dans un arbre de données
+// totalement séparé : frontend/public/data/bulletins/leboncoin/<market>/.
 
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import * as pap from "./sources/pap.js";
-import * as orpi from "./sources/orpi.js";
-import * as guyHoquet from "./sources/guy-hoquet.js";
+import * as leboncoin from "./sources/leboncoin.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, "..", "frontend", "public");
@@ -20,8 +18,6 @@ const MAX_BULLETINS_KEPT = 60;
 
 const RUN_MARKET = process.env.RUN_MARKET || "both";
 const RUN_SOURCE = process.env.RUN_SOURCE === "manual" ? "manual" : "auto";
-
-const ADAPTERS = { [pap.id]: pap, [orpi.id]: orpi, [guyHoquet.id]: guyHoquet };
 
 async function loadCriteria(market) {
   const raw = await fs.readFile(path.join(PUBLIC_DIR, `criteria-${market}.json`), "utf-8");
@@ -40,6 +36,15 @@ async function loadZones(criteria) {
       .map((c) => c.name);
   } catch {
     return [];
+  }
+}
+
+async function loadLeboncoinConfig() {
+  try {
+    const raw = await fs.readFile(path.join(PUBLIC_DIR, "leboncoin-config.json"), "utf-8");
+    return JSON.parse(raw);
+  } catch {
+    return { achat: { enabled: false, autoWeekly: false }, location: { enabled: false, autoWeekly: false } };
   }
 }
 
@@ -69,16 +74,16 @@ function scoreListing(listing, market, criteria) {
   return Math.max(0, Math.min(10, Math.round(score * 10) / 10));
 }
 
-function mockListings(market, sourceId) {
-  const villes = ["Boulogne-sur-Mer", "Wimereux", "Outreau", "Le Portel", "Saint-Martin-Boulogne"];
+function mockListings(market) {
+  const villes = ["Boulogne-sur-Mer", "Wimereux", "Outreau"];
   const isAchat = market === "achat";
-  return Array.from({ length: 8 }).map((_, i) => {
+  return Array.from({ length: 12 }).map((_, i) => {
     const type = i % 3 === 0 ? "appartement" : "maison";
     const surface = 40 + Math.round(Math.random() * 90);
     const priceBase = isAchat ? 1900 + Math.random() * 900 : 8 + Math.random() * 6;
     const price = Math.round(surface * priceBase);
     return {
-      source: sourceId,
+      source: "leboncoin",
       type,
       city: villes[i % villes.length],
       title: `${type === "maison" ? "Maison" : "Appartement"} ${surface}m² - ${villes[i % villes.length]}`,
@@ -88,32 +93,36 @@ function mockListings(market, sourceId) {
       jardin: i % 2 === 0,
       parking: i % 3 !== 0,
       dpe: "ABCDEFG"[i % 7],
-      link: `https://example.com/${sourceId}-${market}-${i}`,
+      link: `https://leboncoin.fr/exemple-${market}-${i}`,
     };
   });
 }
 
 async function runForMarket(market) {
+  const config = await loadLeboncoinConfig();
+  if (!config[market]?.enabled) {
+    console.log(`\n📍 Marché : ${market} — Leboncoin désactivé dans leboncoin-config.json, on saute.`);
+    return;
+  }
+
   console.log(`\n📍 Marché : ${market} (source=${RUN_SOURCE})`);
   const criteria = await loadCriteria(market);
   const zones = await loadZones(criteria);
-  const enabledSources = (criteria.sources || []).filter((s) => ADAPTERS[s]);
-  console.log(`  Sites activés : ${enabledSources.join(", ") || "(aucun)"}`);
-  console.log(`  Zones résolues (${criteria.zonesMinMinutes}-${criteria.zonesMaxMinutes} min) : ${zones.join(", ") || "(aucune)"}`);
+  console.log(`  Zones résolues : ${zones.join(", ") || "(aucune)"}`);
 
   let listings = [];
+  let flaggedCount = 0;
+
   if (MOCK) {
-    enabledSources.forEach((s) => listings.push(...mockListings(market, s)));
+    listings = mockListings(market);
     console.log(`  (mode --mock : ${listings.length} annonces factices générées)`);
-  } else if (zones.length === 0 || enabledSources.length === 0) {
-    console.warn("  ⚠️  Aucune zone ou aucun site activé — vérifie criteria et communes-temps.json.");
+  } else if (zones.length === 0) {
+    console.warn("  ⚠️  Aucune zone dans l'intervalle choisi.");
   } else {
-    for (const sourceId of enabledSources) {
-      console.log(`  🔎 Source : ${ADAPTERS[sourceId].label}`);
-      const found = await ADAPTERS[sourceId].search(market, zones);
-      console.log(`    ${found.length} annonces trouvées.`);
-      listings.push(...found);
-    }
+    const result = await leboncoin.search(market, zones);
+    listings = result.listings;
+    flaggedCount = result.flaggedCount;
+    console.log(`  ${listings.length} annonces retenues, ${flaggedCount} écartée(s) comme suspectes.`);
   }
 
   const scored = listings
@@ -125,14 +134,14 @@ async function runForMarket(market) {
     ? Math.round(withPm2.reduce((sum, l) => sum + l.pricePerM2, 0) / withPm2.length)
     : 0;
   const avgPrice = scored.length ? Math.round(scored.reduce((sum, l) => sum + l.price, 0) / scored.length) : 0;
-  const top10 = scored.sort((a, b) => b.score - a.score).slice(0, MAX_TOP);
+  const top10 = scored.sort((a, b) => b.score - a.score).slice(0, 10);
 
   const bulletin = {
     id: `${market}-${Date.now()}`,
     market,
     date: new Date().toISOString(),
     source: RUN_SOURCE,
-    sourcesUsed: enabledSources,
+    flaggedCount,
     avgPricePerM2,
     avgPrice,
     totalAnalyzed: scored.length,
@@ -140,11 +149,11 @@ async function runForMarket(market) {
     top10,
   };
 
-  const outDir = path.join(PUBLIC_DIR, "data", "bulletins", "agences", market);
+  const outDir = path.join(PUBLIC_DIR, "data", "bulletins", "leboncoin", market);
   await fs.mkdir(outDir, { recursive: true });
   const filename = `${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
   await fs.writeFile(path.join(outDir, filename), JSON.stringify(bulletin, null, 2));
-  console.log(`  ✅ Écrit agences/${market}/${filename} (${top10.length} retenues sur ${scored.length} analysées)`);
+  console.log(`  ✅ Écrit leboncoin/${market}/${filename}`);
 
   const indexPath = path.join(outDir, "index.json");
   let index = [];
@@ -164,6 +173,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error("❌ Erreur pendant le scraping :", err);
+  console.error("❌ Erreur pendant le scraping Leboncoin :", err);
   process.exit(1);
 });

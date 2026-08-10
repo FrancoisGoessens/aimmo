@@ -8,6 +8,7 @@ import { fmtMoney, computeVariation, DURATION_LABELS } from "../utils";
 const props = defineProps<{
   bulletins: Bulletin[]; // historique complet du marché sélectionné, plus récent en premier
   market: Market;
+  sourceGroup: "agences" | "leboncoin";
   comparisonDuration: string;
 }>();
 
@@ -121,7 +122,13 @@ const dpeDistribution = computed(() => {
         />
         <StatCard label="Variation" :value="(varUp ? '+' : '') + variation.toFixed(1) + ' %'" :sub="`vs ${DURATION_LABELS[comparisonDuration]}`" :value-color="varColor" :sub-color="varColor" />
         <StatCard label="Bulletins générés" :value="String(bulletins.length)" />
-        <StatCard label="Meilleur score (dernier)" :value="latest.bestScore.toFixed(1) + '/10'" />
+        <StatCard
+          v-if="sourceGroup === 'leboncoin'"
+          label="Annonces suspectes écartées"
+          :value="String(latest.flaggedCount ?? 0)"
+          sub="dernier bulletin"
+        />
+        <StatCard v-else label="Meilleur score (dernier)" :value="latest.bestScore.toFixed(1) + '/10'" />
       </div>
 
       <div class="charts-grid">

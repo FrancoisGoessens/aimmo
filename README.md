@@ -38,15 +38,22 @@ Tout tourne sur GitHub (Actions + Pages), gratuitement. Zéro serveur à toi.
    "Workflow permissions" → coche **"Read and write permissions"**.
 
 4. **(Recommandé) Régénère les vrais temps de trajet** avant le premier run réel :
+   - Crée une clé gratuite sur [openrouteservice.org/dev/#/signup](https://openrouteservice.org/dev/#/signup)
+     (2000 requêtes/jour offertes, largement assez pour ce script)
+   - Puis :
    ```bash
    cd scraper
    npm install
-   npm run compute-communes
+   ORS_API_KEY=ta_cle npm run compute-communes
    ```
+   (sous PowerShell Windows : `$env:ORS_API_KEY="ta_cle"; npm run compute-communes`)
+
    Le fichier livré contient des **estimations manuelles** (je n'ai pas pu appeler
-   l'API de calcul d'itinéraire depuis mon environnement). Ce script utilise OSRM
-   (gratuit, sans clé) pour les remplacer par de vrais temps calculés, en excluant les
-   autoroutes. Commit le résultat.
+   l'API depuis mon environnement). Ce script calcule les vrais temps via
+   OpenRouteService, en évitant les péages (les autoroutes gratuites restent
+   autorisées). La liste de communes candidates est volontairement centrée sur le
+   corridor Boulogne/Wimereux/Desvres — cohérent avec Merlimont — plutôt que sur toute
+   la zone proche de Calais Fréthun. Commit le résultat.
 
 5. **Génère un token GitHub personnel** (pour l'étape suivante) :
    - GitHub → Settings (ton compte, pas le repo) → Developer settings → Personal access
@@ -67,27 +74,49 @@ Le site sera visible sur `https://<ton-user>.github.io/AImmo/`.
 
 ## Comment ça marche au quotidien
 
-- **Automatique** : tous les lundis et mercredis, le scraper tourne, génère un bulletin
-  par marché, commit, et redéploie le site. Rien à faire.
-- **À la demande** : bouton "Générer un bulletin" dans la sidebar → choisis le marché,
-  ajuste éventuellement le budget pour ce run précis (n'affecte pas tes critères
-  enregistrés) → "Lancer". Le bulletin apparaît en quelques minutes avec une pastille
-  verte dans la sidebar pour le distinguer des bulletins automatiques.
-- **Modifier les critères** : Paramètres → ajuste zones (slider de temps de trajet),
-  budget (slider), surface, étage, DPE, jardin/parking → "Confirmer les paramètres".
-  Ça committe directement `criteria-<market>.json` dans le repo via l'API GitHub —
-  aucun push manuel nécessaire. Le prochain bulletin (auto ou à la demande) utilisera
-  les nouveaux critères.
+- **Automatique (agences)** : tous les lundis et mercredis, le scraper interroge les sites
+  cochés dans Paramètres, génère un bulletin par marché, commit, et redéploie le site.
+- **Leboncoin** : jamais automatique par défaut. À la demande (bouton "Générer un bulletin" →
+  source "Leboncoin"), ou 1x/semaine si tu actives l'auto hebdo dans Paramètres → Leboncoin.
+- **À la demande** : bouton "Générer un bulletin" dans la sidebar → choisis la source (Agences
+  ou Leboncoin) et le marché, ajuste éventuellement le budget pour ce run précis → "Lancer".
+  Pastille verte dans la sidebar pour distinguer les bulletins manuels des automatiques.
+- **Modifier les critères** : Paramètres → ajuste zones, budget, surface, étage, DPE,
+  jardin/parking, sites agences activés → "Confirmer les paramètres". Commit direct via
+  l'API GitHub, aucun push manuel nécessaire.
 
 ## ⚠️ Points qui demanderont probablement du réglage
 
-- **Sélecteurs PAP.fr** (`scraper/scrape.js`, fonction `parseListingCard`) : écrits sans
-  accès web en direct, à vérifier/ajuster au premier vrai run (0 résultat = sélecteurs à
-  corriger, cf. inspecteur du navigateur sur une page de recherche PAP).
-- **Temps de trajet** : régénère-les avec `npm run compute-communes` (voir étape 4)
-  pour remplacer les estimations manuelles par du calcul réel.
-- **Anti-bot** : si PAP bloque les requêtes automatisées, il faudra espacer davantage
-  les requêtes ou changer de source.
+- **Sélecteurs des sites agences** (`scraper/sources/pap.js`, `orpi.js`, `guy-hoquet.js`) : écrits
+  sans accès web en direct, à vérifier/ajuster au premier vrai run. Orpi et Guy Hoquet ont un
+  risque plus élevé que PAP de rendre leur contenu en JavaScript côté client (donc HTML brut
+  vide même si la requête répond bien) — si c'est le cas, il faudra soit trouver leur endpoint
+  JSON interne (onglet Réseau du navigateur), soit passer par un navigateur headless
+  (Playwright), plus lourd à mettre en place.
+- **Leboncoin** (`scraper/sources/leboncoin.js`) : source la plus fragile, protection anti-bot
+  sérieuse. Symptômes possibles : 0 résultat, HTTP 403/429, ou un CAPTCHA renvoyé à la place du
+  HTML. C'est pour ça qu'il tourne dans un workflow séparé, à la demande ou 1x/semaine max —
+  jamais mélangé aux autres sources.
+- **Temps de trajet** : régénère-les avec `npm run compute-communes` si tu ajoutes des
+  communes ou si les coordonnées approximatives (Wacquinghen, Echinghen, Saint-Léonard —
+  pas trouvé de source précise) te semblent trop décalées.
+
+## Sites "agences" activables
+
+Dans Paramètres, coche les sites que tu veux interroger pour chaque marché : PAP.fr, Orpi,
+Guy Hoquet. Seuls les sites cochés sont scrapés — un site décoché n'est jamais interrogé, ce
+qui évite de perdre du temps sur une source qui ne marche pas pour toi.
+
+## Leboncoin — usage séparé
+
+Volontairement isolé du reste (bascule "Agences / Leboncoin" dans la sidebar, données
+séparées, dashboard dédié) :
+- Jamais dans le même run que les sites agences
+- Détection d'arnaques intégrée (prix suspects, incohérences de prix dans le texte, demandes
+  de contact hors plateforme) — les annonces flaguées sont exclues du top 10 et comptées à
+  part
+- Déclenchement à la demande à tout moment, ou 1x/semaine automatique si tu actives l'option
+  dans Paramètres → Leboncoin
 
 ## Sécurité du token GitHub
 

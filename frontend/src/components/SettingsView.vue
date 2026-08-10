@@ -1,17 +1,30 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from "vue";
-import type { Market, MarketCriteria, CommuneTemps } from "../types";
+import type { Market, MarketCriteria, CommuneTemps, LeboncoinConfig } from "../types";
 import { fmtMoney } from "../utils";
 import RangeSlider from "./RangeSlider.vue";
 import Slider from "./Slider.vue";
 import { getToken, setToken, getRepo, setRepo, isConfigured, commitFile } from "../github";
 
-const props = defineProps<{ market: Market; criteria: MarketCriteria }>();
-const emit = defineEmits<{ saved: [criteria: MarketCriteria] }>();
+const props = defineProps<{ market: Market; criteria: MarketCriteria; leboncoinConfig: LeboncoinConfig | null }>();
+const emit = defineEmits<{ saved: [criteria: MarketCriteria]; leboncoinSaved: [config: LeboncoinConfig] }>();
 
-const form = ref<MarketCriteria>({ ...props.criteria });
+const AGENCY_SOURCES = [
+  { id: "pap", label: "PAP.fr" },
+  { id: "orpi", label: "Orpi" },
+  { id: "guy-hoquet", label: "Guy Hoquet" },
+];
+
+const form = ref<MarketCriteria>({ ...props.criteria, sources: props.criteria.sources ?? [] });
+const lbcForm = ref<LeboncoinConfig>(
+  props.leboncoinConfig ?? {
+    achat: { enabled: false, autoWeekly: false },
+    location: { enabled: false, autoWeekly: false },
+  }
+);
 const communes = ref<CommuneTemps[]>([]);
 const status = ref<"idle" | "saving" | "saved" | "error">("idle");
+const lbcStatus = ref<"idle" | "saving" | "saved" | "error">("idle");
 const errorMsg = ref("");
 
 const tokenInput = ref(getToken() ?? "");
@@ -19,7 +32,7 @@ const repoInput = ref(getRepo() ?? "");
 
 watch(
   () => props.criteria,
-  (c) => (form.value = { ...c })
+  (c) => (form.value = { ...c, sources: c.sources ?? [] })
 );
 
 onMounted(async () => {
@@ -49,6 +62,11 @@ function update<K extends keyof MarketCriteria>(key: K, value: MarketCriteria[K]
   form.value = { ...form.value, [key]: value };
 }
 
+function toggleSource(id: string) {
+  const has = form.value.sources.includes(id);
+  update("sources", has ? form.value.sources.filter((s) => s !== id) : [...form.value.sources, id]);
+}
+
 function saveGithubConfig() {
   setToken(tokenInput.value.trim());
   setRepo(repoInput.value.trim());
@@ -72,6 +90,27 @@ async function confirm() {
   } catch (e) {
     status.value = "error";
     errorMsg.value = e instanceof Error ? e.message : "Erreur inconnue";
+  }
+}
+
+async function confirmLeboncoin() {
+  saveGithubConfig();
+  if (!isConfigured()) {
+    lbcStatus.value = "error";
+    return;
+  }
+  lbcStatus.value = "saving";
+  try {
+    await commitFile(
+      "frontend/public/leboncoin-config.json",
+      JSON.stringify(lbcForm.value, null, 2),
+      "Mise à jour config Leboncoin"
+    );
+    lbcStatus.value = "saved";
+    emit("leboncoinSaved", lbcForm.value);
+    setTimeout(() => (lbcStatus.value = "idle"), 2000);
+  } catch {
+    lbcStatus.value = "error";
   }
 }
 </script>
@@ -161,6 +200,68 @@ async function confirm() {
           </button>
         </div>
       </div>
+
+      <div>
+        <label class="field-label">Sites agences interrogés</label>
+        <div class="sources-checks">
+          <button
+            v-for="s in AGENCY_SOURCES"
+            :key="s.id"
+            class="toggle-btn"
+            :class="{ 'toggle-btn--active': form.sources.includes(s.id) }"
+            @click="toggleSource(s.id)"
+          >
+            {{ s.label }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings__card">
+      <div class="settings__card-title">Leboncoin</div>
+      <p class="settings__card-hint">
+        Séparé des sites agences (source plus fragile) — jamais scrappé automatiquement sauf si tu actives
+        l'option hebdomadaire.
+      </p>
+      <div class="field-row">
+        <div class="lbc-block">
+          <div class="lbc-block__title">Achat</div>
+          <button
+            class="toggle-btn"
+            :class="{ 'toggle-btn--active': lbcForm.achat.enabled }"
+            @click="lbcForm.achat.enabled = !lbcForm.achat.enabled"
+          >
+            Activé
+          </button>
+          <button
+            class="toggle-btn"
+            :class="{ 'toggle-btn--active': lbcForm.achat.autoWeekly }"
+            @click="lbcForm.achat.autoWeekly = !lbcForm.achat.autoWeekly"
+          >
+            Auto 1x/semaine
+          </button>
+        </div>
+        <div class="lbc-block">
+          <div class="lbc-block__title">Location</div>
+          <button
+            class="toggle-btn"
+            :class="{ 'toggle-btn--active': lbcForm.location.enabled }"
+            @click="lbcForm.location.enabled = !lbcForm.location.enabled"
+          >
+            Activé
+          </button>
+          <button
+            class="toggle-btn"
+            :class="{ 'toggle-btn--active': lbcForm.location.autoWeekly }"
+            @click="lbcForm.location.autoWeekly = !lbcForm.location.autoWeekly"
+          >
+            Auto 1x/semaine
+          </button>
+        </div>
+      </div>
+      <button class="confirm-btn confirm-btn--secondary" :disabled="lbcStatus === 'saving'" @click="confirmLeboncoin">
+        {{ lbcStatus === "saving" ? "Enregistrement…" : lbcStatus === "saved" ? "Enregistré ✓" : "Confirmer Leboncoin" }}
+      </button>
     </div>
 
     <div class="settings__card settings__card--github">
@@ -336,5 +437,29 @@ async function confirm() {
 
 .confirm-btn:disabled {
   opacity: 0.6;
+}
+
+.confirm-btn--secondary {
+  background: var(--surface-2);
+  color: var(--text);
+  margin-top: 4px;
+}
+
+.sources-checks {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lbc-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lbc-block__title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-soft);
 }
 </style>

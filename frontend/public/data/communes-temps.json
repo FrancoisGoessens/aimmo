@@ -1,22 +1,101 @@
 {
-  "generatedAt": "ESTIMATION_MANUELLE_A_REGENERER",
+  "generatedAt": "2026-08-10T09:34:30.364Z",
   "communes": [
-    { "name": "Coquelles", "minutes": 5, "lat": 50.9427, "lng": 1.8199 },
-    { "name": "Calais", "minutes": 10, "lat": 50.9513, "lng": 1.8587 },
-    { "name": "Sangatte", "minutes": 10, "lat": 50.9497, "lng": 1.7729 },
-    { "name": "Marck", "minutes": 13, "lat": 50.9622, "lng": 1.9455 },
-    { "name": "Guînes", "minutes": 13, "lat": 50.8579, "lng": 1.8709 },
-    { "name": "Marquise", "minutes": 15, "lat": 50.8195, "lng": 1.7061 },
-    { "name": "Ardres", "minutes": 18, "lat": 50.8560, "lng": 1.9885 },
-    { "name": "Wissant", "minutes": 20, "lat": 50.8829, "lng": 1.6602 },
-    { "name": "Licques", "minutes": 20, "lat": 50.8371, "lng": 1.9522 },
-    { "name": "Wimille", "minutes": 22, "lat": 50.7735, "lng": 1.6270 },
-    { "name": "Wimereux", "minutes": 24, "lat": 50.7679, "lng": 1.6134 },
-    { "name": "Desvres", "minutes": 27, "lat": 50.6693, "lng": 1.8371 },
-    { "name": "Saint-Martin-Boulogne", "minutes": 27, "lat": 50.7280, "lng": 1.6187 },
-    { "name": "Boulogne-sur-Mer", "minutes": 28, "lat": 50.7264, "lng": 1.6147 },
-    { "name": "Condette", "minutes": 29, "lat": 50.6767, "lng": 1.6379 },
-    { "name": "Outreau", "minutes": 30, "lat": 50.7106, "lng": 1.6018 },
-    { "name": "Le Portel", "minutes": 30, "lat": 50.7157, "lng": 1.5794 }
+    {
+      "name": "Marquise",
+      "minutes": 11,
+      "lat": 50.8195,
+      "lng": 1.7061
+    },
+    {
+      "name": "Offrethun",
+      "minutes": 14,
+      "lat": 50.7847,
+      "lng": 1.6925
+    },
+    {
+      "name": "Wimille",
+      "minutes": 16,
+      "lat": 50.7735,
+      "lng": 1.627
+    },
+    {
+      "name": "Wacquinghen",
+      "minutes": 17,
+      "lat": 50.815,
+      "lng": 1.665
+    },
+    {
+      "name": "Saint-Martin-Boulogne",
+      "minutes": 19,
+      "lat": 50.728,
+      "lng": 1.6187
+    },
+    {
+      "name": "Wimereux",
+      "minutes": 20,
+      "lat": 50.7679,
+      "lng": 1.6134
+    },
+    {
+      "name": "Baincthun",
+      "minutes": 22,
+      "lat": 50.7106,
+      "lng": 1.6811
+    },
+    {
+      "name": "Boulogne-sur-Mer",
+      "minutes": 23,
+      "lat": 50.7264,
+      "lng": 1.6147
+    },
+    {
+      "name": "Echinghen",
+      "minutes": 24,
+      "lat": 50.705,
+      "lng": 1.66
+    },
+    {
+      "name": "Outreau",
+      "minutes": 25,
+      "lat": 50.7106,
+      "lng": 1.6018
+    },
+    {
+      "name": "Pont-de-Briques",
+      "minutes": 25,
+      "lat": 50.688,
+      "lng": 1.634
+    },
+    {
+      "name": "Saint-Léonard",
+      "minutes": 27,
+      "lat": 50.705,
+      "lng": 1.625
+    },
+    {
+      "name": "Condette",
+      "minutes": 28,
+      "lat": 50.6767,
+      "lng": 1.6379
+    },
+    {
+      "name": "Isques",
+      "minutes": 28,
+      "lat": 50.6767,
+      "lng": 1.6508
+    },
+    {
+      "name": "Le Portel",
+      "minutes": 29,
+      "lat": 50.7157,
+      "lng": 1.5794
+    },
+    {
+      "name": "Saint-Étienne-au-Mont",
+      "minutes": 30,
+      "lat": 50.6822,
+      "lng": 1.6269
+    }
   ]
 }

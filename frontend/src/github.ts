@@ -81,12 +81,12 @@ export async function commitFile(filePath: string, content: string, message: str
   await ghFetch(apiUrl, { method: "PUT", body: JSON.stringify(body) });
 }
 
-// Déclenche le workflow "Scrape & Deploy" à la demande, avec des inputs optionnels
-// pour générer un bulletin ponctuel (marché + critères éventuellement modifiés en live).
-export async function triggerWorkflow(inputs: Record<string, string>): Promise<void> {
+// Déclenche un workflow à la demande (scrape-and-deploy.yml ou scrape-leboncoin.yml),
+// avec des inputs optionnels pour générer un bulletin ponctuel.
+export async function triggerWorkflow(workflowFile: string, inputs: Record<string, string>): Promise<void> {
   const repo = getRepo();
   if (!repo) throw new Error("Aucun repo configuré.");
-  const url = `https://api.github.com/repos/${repo}/actions/workflows/scrape-and-deploy.yml/dispatches`;
+  const url = `https://api.github.com/repos/${repo}/actions/workflows/${workflowFile}/dispatches`;
   await ghFetch(url, {
     method: "POST",
     body: JSON.stringify({ ref: "main", inputs }),

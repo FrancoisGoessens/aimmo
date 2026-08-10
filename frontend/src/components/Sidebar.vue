@@ -7,6 +7,7 @@ const props = defineProps<{
   bulletins: Bulletin[];
   selectedId: string | null;
   market: Market;
+  sourceGroup: "agences" | "leboncoin";
   view: "home" | "bulletin" | "settings";
   mobileOpen: boolean;
   isMobile: boolean;
@@ -16,6 +17,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   selectBulletin: [id: string];
   selectMarket: [market: Market];
+  selectSourceGroup: [group: "agences" | "leboncoin"];
   goHome: [];
   goSettings: [];
   openGenerate: [];
@@ -76,8 +78,28 @@ function dotClasses(b: Bulletin) {
 
   <aside class="sidebar" :class="{ 'sidebar--mobile': isMobile, 'sidebar--open': mobileOpen }">
     <div class="sidebar__header">
-      <div class="sidebar__title">AImmo</div>
-      <div class="sidebar__subtitle">Recherche · Côte d'Opale</div>
+      <div>
+        <div class="sidebar__title">AImmo</div>
+        <div class="sidebar__subtitle">Recherche · Côte d'Opale</div>
+      </div>
+      <div class="group-switch" role="group" aria-label="Source">
+        <button
+          class="group-switch__btn"
+          :class="{ 'group-switch__btn--active': sourceGroup === 'agences' }"
+          title="Agences"
+          @click="emit('selectSourceGroup', 'agences')"
+        >
+          Ag
+        </button>
+        <button
+          class="group-switch__btn"
+          :class="{ 'group-switch__btn--active': sourceGroup === 'leboncoin' }"
+          title="Leboncoin"
+          @click="emit('selectSourceGroup', 'leboncoin')"
+        >
+          Lbc
+        </button>
+      </div>
     </div>
 
     <nav class="sidebar__top-nav">
@@ -225,8 +247,37 @@ function dotClasses(b: Bulletin) {
 }
 
 .sidebar__header {
-  padding: 22px 18px 16px;
+  padding: 18px 18px 16px;
   border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.group-switch {
+  display: flex;
+  background: var(--surface-2);
+  border-radius: 7px;
+  padding: 2px;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.group-switch__btn {
+  border: none;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 4px 7px;
+  border-radius: 5px;
+  letter-spacing: 0.02em;
+}
+
+.group-switch__btn--active {
+  background: var(--accent);
+  color: var(--accent-fg);
 }
 
 .sidebar__title {
@@ -259,6 +310,10 @@ function dotClasses(b: Bulletin) {
   border-radius: 10px;
   padding: 3px;
   gap: 2px;
+}
+
+.market-toggle--group {
+  margin-bottom: 8px;
 }
 
 .market-toggle__btn {

@@ -6,5 +6,6 @@
   "etageMax": 1,
   "jardin": false,
   "parking": true,
-  "dpeMin": "E"
+  "dpeMin": "E",
+  "sources": ["pap", "orpi", "guy-hoquet"]
 }

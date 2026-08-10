@@ -1,0 +1,107 @@
+name: Scrape Leboncoin & Deploy
+
+on:
+  schedule:
+    # Tourne chaque dimanche — le script lui-même vérifie leboncoin-config.json et ne
+    # fait rien si "autoWeekly" est désactivé pour un marché donné.
+    - cron: "0 8 * * 0"
+  workflow_dispatch:
+    inputs:
+      market:
+        description: "Marché à scraper"
+        type: choice
+        options: [both, achat, location]
+        default: both
+      budget_override:
+        description: "Surcharge ponctuelle du budget max (laisser vide pour ignorer)"
+        required: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install scraper deps
+        working-directory: ./scraper
+        run: npm install
+
+      - name: Vérifier si l'auto hebdo est activée (run planifié uniquement)
+        if: github.event_name == 'schedule'
+        working-directory: ./scraper
+        run: |
+          node -e "
+            const fs = require('fs');
+            const cfg = JSON.parse(fs.readFileSync('../frontend/public/leboncoin-config.json', 'utf-8'));
+            const anyAuto = cfg.achat?.autoWeekly || cfg.location?.autoWeekly;
+            if (!anyAuto) { console.log('Auto hebdo désactivée pour les deux marchés — rien à faire.'); process.exit(1); }
+          " || echo "SKIP=true" >> $GITHUB_ENV
+
+      - name: Run Leboncoin scraper
+        if: env.SKIP != 'true'
+        working-directory: ./scraper
+        env:
+          RUN_MARKET: ${{ github.event.inputs.market || 'both' }}
+          RUN_SOURCE: ${{ github.event_name == 'workflow_dispatch' && 'manual' || 'auto' }}
+          BUDGET_OVERRIDE_ACHAT: ${{ github.event.inputs.market == 'achat' && github.event.inputs.budget_override || '' }}
+          BUDGET_OVERRIDE_LOCATION: ${{ github.event.inputs.market == 'location' && github.event.inputs.budget_override || '' }}
+        run: npm run scrape:leboncoin
+
+      - name: Commit new bulletin(s)
+        if: env.SKIP != 'true'
+        run: |
+          git config user.name "aimmo-bot"
+          git config user.email "actions@github.com"
+          git add frontend/public/data/bulletins/leboncoin
+          git diff --staged --quiet || git commit -m "Nouveau bulletin Leboncoin $(date +'%Y-%m-%d %H:%M')"
+          git push
+
+  build-and-deploy:
+    needs: scrape
+    if: needs.scrape.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (avec le commit du scraper)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install frontend deps
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./frontend/dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

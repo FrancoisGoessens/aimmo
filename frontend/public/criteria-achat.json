@@ -6,5 +6,6 @@
   "etageMax": "RDC ou 1er étage",
   "jardin": true,
   "parking": false,
-  "dpeMin": "D"
+  "dpeMin": "D",
+  "sources": ["pap", "orpi", "guy-hoquet"]
 }

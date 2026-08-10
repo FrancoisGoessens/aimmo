@@ -8,6 +8,7 @@ import { fmtMoney, fmtDateLong } from "../utils";
 const props = defineProps<{
   selected: Bulletin;
   market: Market;
+  sourceGroup: "agences" | "leboncoin";
   criteria: MarketCriteria;
 }>();
 
@@ -62,8 +63,17 @@ const bulletinTitle = computed(() => {
         :value="String(selected.totalAnalyzed)"
         :sub="`${selected.top10.length} retenues`"
       />
-      <StatCard label="Meilleur score" :value="selected.bestScore.toFixed(1) + '/10'" />
+      <StatCard
+        v-if="sourceGroup === 'leboncoin'"
+        label="Annonces suspectes écartées"
+        :value="String(selected.flaggedCount ?? 0)"
+      />
+      <StatCard v-else label="Meilleur score" :value="selected.bestScore.toFixed(1) + '/10'" />
     </div>
+
+    <p v-if="sourceGroup === 'agences' && selected.sourcesUsed?.length" class="sources-line">
+      Sites interrogés : {{ selected.sourcesUsed.join(", ") }}
+    </p>
 
     <div class="section-title">Top 10 des annonces</div>
     <div class="listings-grid">
@@ -142,7 +152,13 @@ const bulletinTitle = computed(() => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 14px;
-  margin-bottom: 28px;
+  margin-bottom: 12px;
+}
+
+.sources-line {
+  font-size: 12px;
+  color: var(--text-soft);
+  margin: 0 0 24px;
 }
 
 .section-title {

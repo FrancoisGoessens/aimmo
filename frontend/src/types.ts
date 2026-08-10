@@ -1,9 +1,11 @@
 export type Market = "achat" | "location";
+export type SourceGroup = "agences" | "leboncoin";
 export type PropertyType = "maison" | "appartement";
 export type BulletinSource = "auto" | "manual";
 
 export interface Listing {
   id: string;
+  source?: string;
   type: PropertyType;
   city: string;
   title: string;
@@ -23,6 +25,8 @@ export interface Bulletin {
   market: Market;
   date: string; // ISO
   source: BulletinSource;
+  sourcesUsed?: string[]; // sites agences utilisés pour ce bulletin
+  flaggedCount?: number; // annonces écartées comme suspectes (Leboncoin uniquement)
   avgPricePerM2: number;
   avgPrice: number;
   totalAnalyzed: number;
@@ -39,6 +43,7 @@ export interface MarketCriteria {
   jardin: boolean;
   parking: boolean;
   dpeMin: string;
+  sources: string[]; // sites "agences" activés (pap, orpi, guy-hoquet...)
 }
 
 export interface CommuneTemps {
@@ -46,4 +51,14 @@ export interface CommuneTemps {
   minutes: number;
   lat: number;
   lng: number;
+}
+
+export interface LeboncoinMarketConfig {
+  enabled: boolean;
+  autoWeekly: boolean;
+}
+
+export interface LeboncoinConfig {
+  achat: LeboncoinMarketConfig;
+  location: LeboncoinMarketConfig;
 }

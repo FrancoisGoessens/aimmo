@@ -18,6 +18,23 @@ export interface ThemeColors {
   dangerSoft: string;
 }
 
+// Accent "Leboncoin" — remplace uniquement accent/accentSoft/accentFg quand ce groupe
+// de sources est sélectionné, tout le reste de la palette (surfaces, textes, DPE,
+// score) reste identique. C'est ce qui fait passer les graphs/boutons/badges actifs
+// du bleu à l'orange sans re-designer chaque composant.
+export const ORANGE_ACCENT: Record<"light" | "dark", Pick<ThemeColors, "accent" | "accentSoft" | "accentFg">> = {
+  light: {
+    accent: "oklch(64% 0.19 45)",
+    accentSoft: "oklch(93% 0.06 55)",
+    accentFg: "white",
+  },
+  dark: {
+    accent: "oklch(74% 0.16 50)",
+    accentSoft: "oklch(32% 0.08 50)",
+    accentFg: "oklch(15% 0.02 50)",
+  },
+};
+
 export const THEMES: Record<"light" | "dark", ThemeColors> = {
   light: {
     bg: "oklch(97% 0.004 250)",

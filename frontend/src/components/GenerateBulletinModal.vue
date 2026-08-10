@@ -11,6 +11,7 @@ const props = defineProps<{
 const emit = defineEmits<{ close: [] }>();
 
 const market = ref<Market>("achat");
+const group = ref<"agences" | "leboncoin">("agences");
 const overrideBudget = ref<number>(props.criteriaAchat.budgetMax);
 const status = ref<"idle" | "sending" | "sent" | "error">("idle");
 const errorMsg = ref("");
@@ -28,7 +29,8 @@ async function launch() {
   status.value = "sending";
   errorMsg.value = "";
   try {
-    await triggerWorkflow({
+    const workflowFile = group.value === "agences" ? "scrape-and-deploy.yml" : "scrape-leboncoin.yml";
+    await triggerWorkflow(workflowFile, {
       market: market.value,
       budget_override: String(overrideBudget.value),
     });
@@ -48,6 +50,18 @@ async function launch() {
         Lance un relevé ponctuel, en plus du rythme automatique lundi/mercredi. Il apparaîtra dans la sidebar avec
         une pastille distincte des bulletins automatiques.
       </p>
+
+      <div class="field">
+        <label class="field-label">Source</label>
+        <div class="toggle-group">
+          <button class="toggle-group__btn" :class="{ 'toggle-group__btn--active': group === 'agences' }" @click="group = 'agences'">
+            Agences
+          </button>
+          <button class="toggle-group__btn" :class="{ 'toggle-group__btn--active': group === 'leboncoin' }" @click="group = 'leboncoin'">
+            Leboncoin
+          </button>
+        </div>
+      </div>
 
       <div class="field">
         <label class="field-label">Marché</label>

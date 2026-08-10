@@ -5,11 +5,12 @@ import Home from "./components/Home.vue";
 import BulletinView from "./components/BulletinView.vue";
 import SettingsView from "./components/SettingsView.vue";
 import GenerateBulletinModal from "./components/GenerateBulletinModal.vue";
-import type { Bulletin, Market, MarketCriteria } from "./types";
-import { THEMES, cssVars } from "./theme";
+import type { Bulletin, Market, MarketCriteria, SourceGroup, LeboncoinConfig } from "./types";
+import { THEMES, ORANGE_ACCENT, cssVars } from "./theme";
 
 const theme = ref<"light" | "dark">("light");
 const market = ref<Market>("achat");
+const sourceGroup = ref<SourceGroup>("agences");
 const view = ref<"home" | "bulletin" | "settings">("home");
 const selectedId = ref<string | null>(null);
 const mobileOpen = ref(false);
@@ -18,11 +19,23 @@ const comparisonDuration = ref("3m");
 const showGenerateModal = ref(false);
 
 const status = ref<"loading" | "ready" | "error">("loading");
-const bulletinsByMarket = ref<Record<Market, Bulletin[]>>({ achat: [], location: [] });
+// bulletins[sourceGroup][market]
+const bulletinsData = ref<Record<SourceGroup, Record<Market, Bulletin[]>>>({
+  agences: { achat: [], location: [] },
+  leboncoin: { achat: [], location: [] },
+});
 const criteriaByMarket = ref<Record<Market, MarketCriteria> | null>(null);
+const leboncoinConfig = ref<LeboncoinConfig | null>(null);
 
-const rootStyle = computed(() => cssVars(THEMES[theme.value]));
-const currentBulletins = computed(() => bulletinsByMarket.value[market.value]);
+const rootStyle = computed(() => {
+  const base = cssVars(THEMES[theme.value]);
+  if (sourceGroup.value === "leboncoin") {
+    const o = ORANGE_ACCENT[theme.value];
+    return { ...base, "--accent": o.accent, "--accent-soft": o.accentSoft, "--accent-fg": o.accentFg };
+  }
+  return base;
+});
+const currentBulletins = computed(() => bulletinsData.value[sourceGroup.value][market.value]);
 const selectedBulletin = computed(
   () => currentBulletins.value.find((b) => b.id === selectedId.value) ?? currentBulletins.value[0] ?? null
 );
@@ -32,15 +45,15 @@ function checkMobile() {
   isMobile.value = window.innerWidth < 960;
 }
 
-async function loadMarket(m: Market): Promise<Bulletin[]> {
+async function loadBulletins(group: SourceGroup, m: Market): Promise<Bulletin[]> {
   const base = import.meta.env.BASE_URL;
   try {
-    const indexRes = await fetch(`${base}data/bulletins/${m}/index.json`);
+    const indexRes = await fetch(`${base}data/bulletins/${group}/${m}/index.json`);
     if (!indexRes.ok) return [];
     const filenames: string[] = await indexRes.json();
     const results = await Promise.all(
       filenames.map(async (f) => {
-        const res = await fetch(`${base}data/bulletins/${m}/${f}`);
+        const res = await fetch(`${base}data/bulletins/${group}/${m}/${f}`);
         if (!res.ok) return null;
         return (await res.json()) as Bulletin;
       })
@@ -62,19 +75,37 @@ async function loadCriteria(m: Market): Promise<MarketCriteria | null> {
   }
 }
 
+async function loadLeboncoinConfig(): Promise<LeboncoinConfig | null> {
+  const base = import.meta.env.BASE_URL;
+  try {
+    const res = await fetch(`${base}leboncoin-config.json`);
+    if (!res.ok) return null;
+    return (await res.json()) as LeboncoinConfig;
+  } catch {
+    return null;
+  }
+}
+
 onMounted(async () => {
   checkMobile();
   window.addEventListener("resize", checkMobile);
 
   try {
-    const [achatB, locationB, achatC, locationC] = await Promise.all([
-      loadMarket("achat"),
-      loadMarket("location"),
+    const [agencesAchat, agencesLocation, lbcAchat, lbcLocation, achatC, locationC, lbcConfig] = await Promise.all([
+      loadBulletins("agences", "achat"),
+      loadBulletins("agences", "location"),
+      loadBulletins("leboncoin", "achat"),
+      loadBulletins("leboncoin", "location"),
       loadCriteria("achat"),
       loadCriteria("location"),
+      loadLeboncoinConfig(),
     ]);
-    bulletinsByMarket.value = { achat: achatB, location: locationB };
+    bulletinsData.value = {
+      agences: { achat: agencesAchat, location: agencesLocation },
+      leboncoin: { achat: lbcAchat, location: lbcLocation },
+    };
     if (achatC && locationC) criteriaByMarket.value = { achat: achatC, location: locationC };
+    leboncoinConfig.value = lbcConfig;
     status.value = "ready";
   } catch {
     status.value = "error";
@@ -83,7 +114,13 @@ onMounted(async () => {
 
 function selectMarket(m: Market) {
   market.value = m;
-  const list = bulletinsByMarket.value[m];
+  const list = bulletinsData.value[sourceGroup.value][m];
+  selectedId.value = list.length ? list[0].id : null;
+}
+
+function selectSourceGroup(g: SourceGroup) {
+  sourceGroup.value = g;
+  const list = bulletinsData.value[g][market.value];
   selectedId.value = list.length ? list[0].id : null;
 }
 
@@ -94,6 +131,10 @@ function selectBulletin(id: string) {
 
 function onSettingsSaved(c: MarketCriteria) {
   if (criteriaByMarket.value) criteriaByMarket.value[market.value] = c;
+}
+
+function onLeboncoinConfigSaved(c: LeboncoinConfig) {
+  leboncoinConfig.value = c;
 }
 
 watch(theme, (t) => {
@@ -109,6 +150,7 @@ const emptyCriteria: MarketCriteria = {
   jardin: false,
   parking: false,
   dpeMin: "G",
+  sources: [],
 };
 </script>
 
@@ -129,12 +171,14 @@ const emptyCriteria: MarketCriteria = {
         :bulletins="currentBulletins"
         :selected-id="selectedId"
         :market="market"
+        :source-group="sourceGroup"
         :view="view"
         :mobile-open="mobileOpen"
         :is-mobile="isMobile"
         :theme="theme"
         @select-bulletin="selectBulletin"
         @select-market="selectMarket"
+        @select-source-group="selectSourceGroup"
         @go-home="view = 'home'"
         @go-settings="view = 'settings'"
         @open-generate="showGenerateModal = true"
@@ -153,12 +197,15 @@ const emptyCriteria: MarketCriteria = {
             v-if="view === 'settings' && currentCriteria"
             :market="market"
             :criteria="currentCriteria"
+            :leboncoin-config="leboncoinConfig"
             @saved="onSettingsSaved"
+            @leboncoin-saved="onLeboncoinConfigSaved"
           />
           <BulletinView
             v-else-if="view === 'bulletin' && selectedBulletin"
             :selected="selectedBulletin"
             :market="market"
+            :source-group="sourceGroup"
             :criteria="currentCriteria ?? emptyCriteria"
             @go-settings="view = 'settings'"
           />
@@ -166,6 +213,7 @@ const emptyCriteria: MarketCriteria = {
             v-else
             :bulletins="currentBulletins"
             :market="market"
+            :source-group="sourceGroup"
             :comparison-duration="comparisonDuration"
             @change-duration="(d) => (comparisonDuration = d)"
             @change-market="selectMarket"

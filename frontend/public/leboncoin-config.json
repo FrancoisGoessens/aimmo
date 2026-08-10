@@ -1,0 +1,4 @@
+{
+  "achat": { "enabled": true, "autoWeekly": false },
+  "location": { "enabled": true, "autoWeekly": false }
+}
