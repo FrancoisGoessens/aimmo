@@ -1,10 +1,9 @@
 // orpi.js — adaptateur Orpi (réseau national d'agences, un des plus gros de France).
 //
-// URL confirmée par recherche web directe (10/08) :
-// https://www.orpi.com/annonces-immobilieres-<slug-ville>/vente-maison/
-// Pas de code postal ni d'identifiant interne nécessaire, contrairement à PAP — bien
-// plus simple. Sélecteurs de parsing HTML en revanche non vérifiés (page potentiellement
-// rendue en JS côté client) : à ajuster si le HTML brut ressort vide malgré un 200 OK.
+// URL et sélecteurs de parsing confirmés par un vrai extrait HTML fourni le 10/08
+// (recherche "vente-maison" à Marquise) : cards en <article class="c-estate-thumb">,
+// prix dans .c-estate-thumb__price-tag .u-h4, infos bien dans
+// .c-estate-thumb__infos__estate, ville dans .c-estate-thumb__infos__location.
 
 import * as cheerio from "cheerio";
 import { fetchHtml, slugify, wait } from "./_shared.js";
@@ -14,28 +13,41 @@ export const label = "Orpi";
 
 function parseCard($, el, kind, city) {
   const card = $(el);
-  const title = card.find(".card-title, h2, h3, .listing-title").first().text().trim();
-  const priceText = card.find(".price, .card-price").first().text().trim();
-  const link = card.find("a").first().attr("href");
-  const surfaceText = card.text().match(/(\d+)\s?m²/)?.[1];
-  const etageText = card.text().match(/(\d+)(?:er|ème|e)\s?étage/i)?.[1];
+  const infosText = card
+    .find(".c-estate-thumb__infos__estate")
+    .first()
+    .text()
+    .replace(/\s+/g, " ")
+    .trim();
+  const cityText = card
+    .find(".c-estate-thumb__infos__location")
+    .first()
+    .text()
+    .replace(/\s+/g, " ")
+    .trim();
+  const priceText = card.find(".c-estate-thumb__price-tag .u-h4").first().text();
+  const link = card.find(".c-estate-thumb__infos__estate a").first().attr("href");
+  const fullText = card.text();
+  const surfaceMatch = fullText.match(/(\d+)\s*m(?:²|2)\b/);
+  const etageMatch = fullText.match(/(\d+)(?:er|ème|e)\s?étage/i);
   const price = priceText ? Number(priceText.replace(/[^\d]/g, "")) : null;
-  const surface = surfaceText ? Number(surfaceText) : null;
-  const etage = kind === "maison" ? null : etageText ? Number(etageText) : /rez.de.chauss/i.test(title) ? 0 : null;
+  const surface = surfaceMatch ? Number(surfaceMatch[1]) : null;
+  const etage =
+    kind === "maison" ? null : etageMatch ? Number(etageMatch[1]) : /rez.de.chauss/i.test(fullText) ? 0 : null;
 
-  if (!title || !price) return null;
+  if (price === null) return null;
 
   return {
     source: id,
     type: kind,
-    city,
-    title,
+    city: cityText || city,
+    title: infosText || `${kind === "maison" ? "Maison" : "Appartement"} - ${cityText || city}`,
     price,
     surface,
     etage,
-    jardin: /jardin/i.test(card.text()),
-    parking: /(parking|garage|box)/i.test(card.text()),
-    dpe: card.text().match(/DPE\s?:?\s?([A-G])/i)?.[1] ?? null,
+    jardin: /jardin/i.test(fullText),
+    parking: /(parking|garage|box)/i.test(fullText),
+    dpe: fullText.match(/DPE\s?:?\s?([A-G])\b/i)?.[1] ?? null,
     link: link?.startsWith("http") ? link : `https://www.orpi.com${link ?? ""}`,
   };
 }
@@ -51,7 +63,7 @@ export async function search(market, zones) {
       const html = await fetchHtml(url);
       if (html) {
         const $ = cheerio.load(html);
-        $(".listing-card, .property-card, article")
+        $("article.c-estate-thumb")
           .toArray()
           .forEach((el) => {
             const parsed = parseCard($, el, kind, city);

@@ -111,9 +111,13 @@ async function runForMarket(market) {
   } else {
     for (const sourceId of enabledSources) {
       console.log(`  🔎 Source : ${ADAPTERS[sourceId].label}`);
-      const found = await ADAPTERS[sourceId].search(market, zones);
-      console.log(`    ${found.length} annonces trouvées.`);
-      listings.push(...found);
+      try {
+        const found = await ADAPTERS[sourceId].search(market, zones);
+        console.log(`    ${found.length} annonces trouvées.`);
+        listings.push(...found);
+      } catch (err) {
+        console.warn(`    ⚠️  Source ${ADAPTERS[sourceId].label} en erreur, ignorée : ${err.message}`);
+      }
     }
   }
 

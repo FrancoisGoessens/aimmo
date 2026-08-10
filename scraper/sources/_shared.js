@@ -17,13 +17,24 @@ export function slugify(city) {
     .replace(/(^-|-$)/g, "");
 }
 
-export async function fetchHtml(url) {
-  const res = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
-  if (!res.ok) {
-    console.warn(`    ⚠️  ${url} → HTTP ${res.status}`);
+export async function fetchHtml(url, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { headers: { "User-Agent": USER_AGENT }, signal: controller.signal });
+    if (!res.ok) {
+      console.warn(`    ⚠️  ${url} → HTTP ${res.status}`);
+      return null;
+    }
+    return await res.text();
+  } catch (err) {
+    // Timeout, DNS, connexion refusée, etc. — on ne fait JAMAIS planter tout le run
+    // pour une requête isolée qui échoue. Cette ville/source sera juste ignorée.
+    console.warn(`    ⚠️  ${url} → ${err.code || err.name || "erreur réseau"} (${err.message})`);
     return null;
+  } finally {
+    clearTimeout(timer);
   }
-  return res.text();
 }
 
 // Pause entre requêtes pour rester correct vis-à-vis des sites ciblés.
