@@ -272,7 +272,7 @@ async function confirmLeboncoin() {
       </p>
       <div class="field">
         <label class="field-label">Repo (format utilisateur/repo)</label>
-        <input type="text" class="field-input" v-model="repoInput" placeholder="tonuser/AImmo" />
+        <input type="text" class="field-input" v-model="repoInput" placeholder="tonuser/aimmo" />
       </div>
       <div class="field">
         <label class="field-label">Token GitHub</label>

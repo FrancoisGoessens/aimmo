@@ -160,7 +160,7 @@ const emptyCriteria: MarketCriteria = {
       <button class="mobile-menu-btn" @click="mobileOpen = !mobileOpen" aria-label="Ouvrir le menu">
         <span></span><span></span><span></span>
       </button>
-      <div class="mobile-title">AImmo</div>
+      <div class="mobile-title">aimmo</div>
       <button class="mobile-theme-btn" @click="theme = theme === 'light' ? 'dark' : 'light'">
         {{ theme === "light" ? "☾" : "☀" }}
       </button>

@@ -24,9 +24,9 @@ Tout tourne sur GitHub (Actions + Pages), gratuitement. Zéro serveur à toi.
 
 ## Mise en route (une seule fois)
 
-1. **Pousse ce dossier dans le repo `AImmo`** que tu as déjà créé :
+1. **Pousse ce dossier dans le repo `aimmo`** que tu as déjà créé :
    ```bash
-   cd AImmo
+   cd aimmo
    git add .
    git commit -m "Initial commit"
    git push -u origin main
@@ -58,19 +58,19 @@ Tout tourne sur GitHub (Actions + Pages), gratuitement. Zéro serveur à toi.
 5. **Génère un token GitHub personnel** (pour l'étape suivante) :
    - GitHub → Settings (ton compte, pas le repo) → Developer settings → Personal access
      tokens → Fine-grained tokens → "Generate new token"
-   - Repository access : **"Only select repositories"** → choisis `AImmo`
+   - Repository access : **"Only select repositories"** → choisis `aimmo`
    - Permissions : **Contents → Read and write**, **Actions → Read and write**
    - Donne-lui une expiration (30-90 jours conseillé)
    - Copie le token généré (il ne sera plus jamais affiché)
 
 6. **Configure le site** : ouvre le site une fois déployé → Paramètres → renseigne le
-   repo (`tonuser/AImmo`) et colle le token. À refaire sur chaque navigateur/appareil
+   repo (`tonuser/aimmo`) et colle le token. À refaire sur chaque navigateur/appareil
    que tu utilises pour consulter le site (le token reste local à chaque navigateur).
 
 7. **Premier run** : onglet **Actions** du repo → "Scrape & Deploy" → "Run workflow"
    (laisse "both" par défaut). Regarde les logs.
 
-Le site sera visible sur `https://<ton-user>.github.io/AImmo/`.
+Le site sera visible sur `https://<ton-user>.github.io/aimmo/`.
 
 ## Comment ça marche au quotidien
 

@@ -79,7 +79,7 @@ function dotClasses(b: Bulletin) {
   <aside class="sidebar" :class="{ 'sidebar--mobile': isMobile, 'sidebar--open': mobileOpen }">
     <div class="sidebar__header">
       <div>
-        <div class="sidebar__title">AImmo</div>
+        <div class="sidebar__title">aimmo</div>
         <div class="sidebar__subtitle">Recherche · Côte d'Opale</div>
       </div>
       <div class="group-switch" role="group" aria-label="Source">
