@@ -1,0 +1,16 @@
+{
+  "id": "achat-1786355731696",
+  "market": "achat",
+  "date": "2026-08-10T09:55:31.696Z",
+  "source": "manual",
+  "sourcesUsed": [
+    "pap",
+    "orpi",
+    "guy-hoquet"
+  ],
+  "avgPricePerM2": 0,
+  "avgPrice": 0,
+  "totalAnalyzed": 0,
+  "bestScore": 0,
+  "top10": []
+}

@@ -1,0 +1,16 @@
+{
+  "id": "location-1786355848975",
+  "market": "location",
+  "date": "2026-08-10T09:57:28.975Z",
+  "source": "manual",
+  "sourcesUsed": [
+    "pap",
+    "orpi",
+    "guy-hoquet"
+  ],
+  "avgPricePerM2": 0,
+  "avgPrice": 0,
+  "totalAnalyzed": 0,
+  "bestScore": 0,
+  "top10": []
+}
