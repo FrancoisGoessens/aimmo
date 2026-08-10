@@ -1,9 +1,16 @@
 // guy-hoquet.js — adaptateur Guy Hoquet (réseau national d'agences).
 //
-// IMPORTANT : mêmes réserves que pour orpi.js — sélecteurs non testés en direct, et
-// risque de rendu JS côté client nécessitant un navigateur headless si le HTML brut
-// est vide au premier run. À vérifier en priorité si ce site sort 0 résultat alors
-// que la requête HTTP répond bien (200).
+// URL "achat" confirmée par recherche web directe (10/08) :
+// https://www.guy-hoquet.com/achat-immobilier/<slug-ville>/maison-vendre
+//
+// URL "location" : PAS confirmée. Le site Guy Hoquet structure ses pages de location
+// par région/département plutôt que par ville sur le domaine principal (contrairement
+// à l'achat, qui est bien par ville) — je n'ai trouvé aucun exemple de page location
+// par ville. Le pattern ci-dessous est une tentative par analogie avec le pattern
+// achat, PAS vérifiée. Si elle sort 0 résultat ou une 404, c'est probablement qu'elle
+// n'existe tout simplement pas sous cette forme — dans ce cas, le plus simple est de
+// désactiver Guy Hoquet pour le marché Location dans Paramètres (case à décocher),
+// et de le garder seulement pour l'Achat où le pattern est fiable.
 
 import * as cheerio from "cheerio";
 import { fetchHtml, slugify, wait } from "./_shared.js";
@@ -40,12 +47,15 @@ function parseCard($, el, kind, city) {
 }
 
 export async function search(market, zones) {
-  const type = market === "achat" ? "acheter" : "louer";
   const listings = [];
 
   for (const kind of ["maison", "appartement"]) {
     for (const city of zones) {
-      const url = `https://www.guy-hoquet.com/${type}/${kind}/${slugify(city)}`;
+      const slug = slugify(city);
+      const url =
+        market === "achat"
+          ? `https://www.guy-hoquet.com/achat-immobilier/${slug}/${kind}-vendre`
+          : `https://www.guy-hoquet.com/location-immobilier/${slug}/${kind}-louer`; // non vérifiée, voir commentaire en tête de fichier
       console.log(`    [guy-hoquet] → ${url}`);
       const html = await fetchHtml(url);
       if (html) {

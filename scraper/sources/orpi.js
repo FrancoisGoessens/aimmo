@@ -1,14 +1,10 @@
 // orpi.js — adaptateur Orpi (réseau national d'agences, un des plus gros de France).
 //
-// IMPORTANT : Orpi centralise la recherche sur orpi.com plutôt que par agence locale,
-// ce qui simplifie la construction d'URL par rapport à des agences indépendantes.
-// Sélecteurs écrits sans accès web en direct depuis mon environnement — à vérifier/
-// ajuster au premier run réel. Orpi utilise plus volontiers du rendu JS côté client
-// que PAP ; si le HTML brut ne contient aucune annonce (souvent le cas avec les sites
-// en React/Vue côté agence), il faudra soit trouver leur endpoint JSON interne
-// (onglet Réseau du navigateur en inspectant une recherche), soit passer par un
-// navigateur headless (Playwright) — plus lourd, à envisager seulement si le HTML
-// brut ne suffit pas.
+// URL confirmée par recherche web directe (10/08) :
+// https://www.orpi.com/annonces-immobilieres-<slug-ville>/vente-maison/
+// Pas de code postal ni d'identifiant interne nécessaire, contrairement à PAP — bien
+// plus simple. Sélecteurs de parsing HTML en revanche non vérifiés (page potentiellement
+// rendue en JS côté client) : à ajuster si le HTML brut ressort vide malgré un 200 OK.
 
 import * as cheerio from "cheerio";
 import { fetchHtml, slugify, wait } from "./_shared.js";
@@ -45,12 +41,12 @@ function parseCard($, el, kind, city) {
 }
 
 export async function search(market, zones) {
-  const type = market === "achat" ? "acheter" : "louer";
+  const type = market === "achat" ? "vente" : "location";
   const listings = [];
 
   for (const kind of ["maison", "appartement"]) {
     for (const city of zones) {
-      const url = `https://www.orpi.com/${type}/${kind}/${slugify(city)}/`;
+      const url = `https://www.orpi.com/annonces-immobilieres-${slugify(city)}/${type}-${kind}/`;
       console.log(`    [orpi] → ${url}`);
       const html = await fetchHtml(url);
       if (html) {
