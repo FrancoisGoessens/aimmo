@@ -1,0 +1,17 @@
+{
+  "id": "location-1786366163980",
+  "market": "location",
+  "date": "2026-08-10T12:49:23.980Z",
+  "source": "manual",
+  "sourcesUsed": [
+    "orpi",
+    "fnaim",
+    "square-habitat",
+    "foncia"
+  ],
+  "avgPricePerM2": 0,
+  "avgPrice": 0,
+  "totalAnalyzed": 0,
+  "bestScore": 0,
+  "top10": []
+}
