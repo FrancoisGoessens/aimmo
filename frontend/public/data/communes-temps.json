@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-10T09:34:30.364Z",
+  "generatedAt": "ESTIMATION_MANUELLE_A_REGENERER",
   "communes": [
     {
       "name": "Marquise",
@@ -8,16 +8,16 @@
       "lng": 1.7061
     },
     {
-      "name": "Offrethun",
-      "minutes": 14,
-      "lat": 50.7847,
-      "lng": 1.6925
-    },
-    {
       "name": "Wimille",
       "minutes": 16,
       "lat": 50.7735,
       "lng": 1.627
+    },
+    {
+      "name": "Offrethun",
+      "minutes": 16,
+      "lat": 50.7847,
+      "lng": 1.6925
     },
     {
       "name": "Wacquinghen",
@@ -38,22 +38,16 @@
       "lng": 1.6134
     },
     {
-      "name": "Baincthun",
-      "minutes": 22,
-      "lat": 50.7106,
-      "lng": 1.6811
-    },
-    {
       "name": "Boulogne-sur-Mer",
       "minutes": 23,
       "lat": 50.7264,
       "lng": 1.6147
     },
     {
-      "name": "Echinghen",
+      "name": "Saint-Léonard",
       "minutes": 24,
       "lat": 50.705,
-      "lng": 1.66
+      "lng": 1.625
     },
     {
       "name": "Outreau",
@@ -62,10 +56,28 @@
       "lng": 1.6018
     },
     {
-      "name": "Saint-Léonard",
-      "minutes": 27,
+      "name": "Echinghen",
+      "minutes": 25,
       "lat": 50.705,
-      "lng": 1.625
+      "lng": 1.66
+    },
+    {
+      "name": "Baincthun",
+      "minutes": 26,
+      "lat": 50.7106,
+      "lng": 1.6811
+    },
+    {
+      "name": "Pont-de-Briques",
+      "minutes": 26,
+      "lat": 50.688,
+      "lng": 1.634
+    },
+    {
+      "name": "Isques",
+      "minutes": 27,
+      "lat": 50.6767,
+      "lng": 1.6508
     },
     {
       "name": "Condette",
@@ -74,10 +86,10 @@
       "lng": 1.6379
     },
     {
-      "name": "Isques",
+      "name": "Saint-Étienne-au-Mont",
       "minutes": 28,
-      "lat": 50.6767,
-      "lng": 1.6508
+      "lat": 50.6822,
+      "lng": 1.6269
     },
     {
       "name": "Le Portel",
@@ -86,10 +98,22 @@
       "lng": 1.5794
     },
     {
-      "name": "Saint-Étienne-au-Mont",
-      "minutes": 30,
-      "lat": 50.6822,
-      "lng": 1.6269
+      "name": "Hardelot-Plage",
+      "minutes": 34,
+      "lat": 50.6538,
+      "lng": 1.5964
+    },
+    {
+      "name": "Desvres",
+      "minutes": 37,
+      "lat": 50.6693,
+      "lng": 1.8371
+    },
+    {
+      "name": "Samer",
+      "minutes": 38,
+      "lat": 50.6438,
+      "lng": 1.7373
     }
   ]
 }

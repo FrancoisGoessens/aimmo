@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import type { Market, MarketCriteria } from "../types";
 import { triggerWorkflow, isConfigured } from "../github";
+import { THEMES, ORANGE_ACCENT, cssVars } from "../theme";
 
 const props = defineProps<{
   criteriaAchat: MarketCriteria;
   criteriaLocation: MarketCriteria;
+  theme: "light" | "dark";
 }>();
 
 const emit = defineEmits<{ close: [] }>();
@@ -15,6 +17,15 @@ const group = ref<"agences" | "leboncoin">("agences");
 const overrideBudget = ref<number>(props.criteriaAchat.budgetMax);
 const status = ref<"idle" | "sending" | "sent" | "error">("idle");
 const errorMsg = ref("");
+
+const modalStyle = computed(() => {
+  const base = cssVars(THEMES[props.theme]);
+  if (group.value === "leboncoin") {
+    const o = ORANGE_ACCENT[props.theme];
+    return { ...base, "--accent": o.accent, "--accent-soft": o.accentSoft, "--accent-fg": o.accentFg };
+  }
+  return base;
+});
 
 watch(market, (m) => {
   overrideBudget.value = m === "achat" ? props.criteriaAchat.budgetMax : props.criteriaLocation.budgetMax;
@@ -44,7 +55,7 @@ async function launch() {
 
 <template>
   <div class="overlay" @click.self="emit('close')">
-    <div class="modal">
+    <div class="modal" :style="modalStyle">
       <div class="modal__title">Générer un bulletin maintenant</div>
       <p class="modal__hint">
         Lance un relevé ponctuel, en plus du rythme automatique lundi/mercredi. Il apparaîtra dans la sidebar avec

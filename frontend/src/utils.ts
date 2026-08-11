@@ -33,9 +33,15 @@ export interface SidebarData {
 }
 
 // Bulletins doivent déjà être triés du plus récent au plus ancien.
+// "Récents" = les 7 derniers jours (fenêtre de temps réelle), pas un nombre fixe
+// d'éléments — sinon deux bulletins du même jour peuvent se retrouver éclatés entre
+// "récents" et le groupe du mois, ce qui n'a aucun sens visuellement.
 export function buildSidebarGroups(bulletins: Bulletin[], now: Date): SidebarData {
-  const recent = bulletins.slice(0, 4);
-  const rest = bulletins.slice(4);
+  const sevenDaysAgo = new Date(now);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const recent = bulletins.filter((b) => new Date(b.date) >= sevenDaysAgo);
+  const rest = bulletins.filter((b) => new Date(b.date) < sevenDaysAgo);
   const groups: SidebarGroup[] = [];
   const map = new Map<string, SidebarGroup>();
 

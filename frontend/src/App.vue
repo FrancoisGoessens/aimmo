@@ -131,6 +131,7 @@ function selectBulletin(id: string) {
 
 function onSettingsSaved(c: MarketCriteria) {
   if (criteriaByMarket.value) criteriaByMarket.value[market.value] = c;
+  setTimeout(() => (view.value = "home"), 900);
 }
 
 function onLeboncoinConfigSaved(c: LeboncoinConfig) {
@@ -160,7 +161,7 @@ const emptyCriteria: MarketCriteria = {
       <button class="mobile-menu-btn" @click="mobileOpen = !mobileOpen" aria-label="Ouvrir le menu">
         <span></span><span></span><span></span>
       </button>
-      <div class="mobile-title">aimmo</div>
+      <div class="mobile-title">AImmo</div>
       <button class="mobile-theme-btn" @click="theme = theme === 'light' ? 'dark' : 'light'">
         {{ theme === "light" ? "☾" : "☀" }}
       </button>
@@ -227,6 +228,7 @@ const emptyCriteria: MarketCriteria = {
       v-if="showGenerateModal && currentCriteria"
       :criteria-achat="criteriaByMarket?.achat ?? emptyCriteria"
       :criteria-location="criteriaByMarket?.location ?? emptyCriteria"
+      :theme="theme"
       @close="showGenerateModal = false"
     />
   </div>

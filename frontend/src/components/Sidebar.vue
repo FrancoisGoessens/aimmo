@@ -79,7 +79,7 @@ function dotClasses(b: Bulletin) {
   <aside class="sidebar" :class="{ 'sidebar--mobile': isMobile, 'sidebar--open': mobileOpen }">
     <div class="sidebar__header">
       <div>
-        <div class="sidebar__title">aimmo</div>
+        <div class="sidebar__title">AImmo</div>
         <div class="sidebar__subtitle">Recherche · Côte d'Opale</div>
       </div>
       <div class="group-switch" role="group" aria-label="Source">
@@ -111,7 +111,9 @@ function dotClasses(b: Bulletin) {
           emit('closeMobile');
         "
       >
-        <span class="home-icon"></span>
+        <svg class="home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 11.5 12 4l9 7.5" /><path d="M5.5 10v9a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1v-9" />
+        </svg>
         Accueil
       </button>
       <button class="nav-item nav-item--generate" @click="emit('openGenerate')">
@@ -201,7 +203,10 @@ function dotClasses(b: Bulletin) {
         <span class="legend__dot legend__dot--manual"></span> Manuel
       </div>
       <button class="nav-item" :class="{ 'nav-item--active': view === 'settings' }" @click="emit('goSettings')">
-        <span class="settings-icon"></span>
+        <svg class="settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
         Paramètres
       </button>
       <button v-if="!isMobile" class="nav-item" @click="emit('toggleTheme')">
@@ -533,11 +538,10 @@ function dotClasses(b: Bulletin) {
   background: var(--success);
 }
 
+.home-icon,
 .settings-icon {
   width: 16px;
   height: 16px;
-  border-radius: 4px;
-  border: 2px solid currentColor;
-  display: inline-block;
+  flex-shrink: 0;
 }
 </style>
