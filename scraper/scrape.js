@@ -35,38 +35,81 @@ async function loadZones(criteria) {
   try {
     const raw = await fs.readFile(path.join(PUBLIC_DIR, "data", "communes-temps.json"), "utf-8");
     const data = JSON.parse(raw);
-    return (data.communes || [])
-      .filter((c) => c.minutes >= criteria.zonesMinMinutes && c.minutes <= criteria.zonesMaxMinutes)
-      .map((c) => c.name);
+    const inRange = (data.communes || []).filter(
+      (c) => c.minutes >= criteria.zonesMinMinutes && c.minutes <= criteria.zonesMaxMinutes
+    );
+    const minutesByCity = new Map((data.communes || []).map((c) => [c.name, c.minutes]));
+    return { names: inRange.map((c) => c.name), minutesByCity };
   } catch {
-    return [];
+    return { names: [], minutesByCity: new Map() };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Scoring par points, un point par critère rempli + bonus quand le bien dépasse
+// nettement le critère. Jardin/parking sont toujours un bonus s'ils sont présents,
+// jamais une pénalité s'ils sont absents (même si demandés) — on ne dit pas non à
+// un plus, mais on ne punit pas leur absence sur un critère non-obligatoire.
+// Score final sur une échelle d'environ 0 à 10 (10 = tous les points + tous les bonus).
+// ---------------------------------------------------------------------------
+function normalizeCity(s) {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 }
 
 const DPE_ORDER = ["A", "B", "C", "D", "E", "F", "G"];
 
-function scoreListing(listing, market, criteria) {
-  let score = 5;
-  if (listing.surface) score += Math.max(-2, Math.min(2, (listing.surface - criteria.surfaceMin) / 20));
-  if (listing.price) {
-    if (listing.price > criteria.budgetMax) {
-      score -= Math.min(3, ((listing.price - criteria.budgetMax) / criteria.budgetMax) * 5);
-    } else {
-      score += 0.5;
+function scoreListing(listing, market, criteria, cityMinutes) {
+  let score = 0;
+
+  // Zone (temps de trajet) — normalement toujours vrai puisqu'on ne recherche que
+  // dans les villes déjà dans l'intervalle, mais on vérifie quand même (au cas où
+  // la donnée de trajet manque pour cette ville).
+  if (cityMinutes !== undefined && cityMinutes >= criteria.zonesMinMinutes && cityMinutes <= criteria.zonesMaxMinutes) {
+    score += 1;
+  }
+
+  // Budget : 1 point si dans le budget, +1 bonus si nettement moins cher (15% sous le max)
+  if (listing.price !== null && listing.price !== undefined) {
+    if (listing.price <= criteria.budgetMax) {
+      score += 1;
+      if (listing.price <= criteria.budgetMax * 0.85) score += 1;
     }
   }
-  if (criteria.jardin) score += listing.jardin ? 1 : -0.5;
-  if (criteria.parking) score += listing.parking ? 1 : -0.5;
+
+  // Surface : 1 point si >= minimum, +1 bonus si nettement au-dessus (+20m²)
+  if (listing.surface !== null) {
+    if (listing.surface >= criteria.surfaceMin) {
+      score += 1;
+      if (listing.surface >= criteria.surfaceMin + 20) score += 1;
+    }
+  }
+
+  // Étage : 1 point si respecte la contrainte, +1 bonus si RDC pile
+  const etageMaxNum =
+    typeof criteria.etageMax === "number" ? criteria.etageMax : /rdc|1er/i.test(String(criteria.etageMax)) ? 1 : null;
+  if (listing.etage !== null && etageMaxNum !== null) {
+    if (listing.etage <= etageMaxNum) {
+      score += 1;
+      if (listing.etage === 0) score += 1;
+    }
+  }
+  // Maison ou info d'étage absente : ni pénalité ni bonus, on ne sait juste pas.
+
+  // DPE : 1 point si au moins aussi bon que le minimum demandé
   if (listing.dpe) {
     const dist = DPE_ORDER.indexOf(listing.dpe) - DPE_ORDER.indexOf(criteria.dpeMin);
-    score += dist <= 0 ? 1 : -dist * 0.5;
+    if (dist <= 0) score += 1;
   }
-  if (market === "location" && typeof criteria.etageMax === "number" && listing.etage !== null) {
-    if (listing.etage > criteria.etageMax) score -= 1.5;
-  } else if (market === "achat" && /rdc|1er/i.test(String(criteria.etageMax)) && listing.etage !== null) {
-    if (listing.etage > 1) score -= 1.5;
-  }
-  return Math.max(0, Math.min(10, Math.round(score * 10) / 10));
+
+  // Jardin / parking : toujours un bonus s'ils sont là, jamais de pénalité sinon
+  if (listing.jardin) score += 1;
+  if (listing.parking) score += 1;
+
+  return Math.round(score * 10) / 10;
 }
 
 function mockListings(market, sourceId) {
@@ -96,7 +139,7 @@ function mockListings(market, sourceId) {
 async function runForMarket(market) {
   console.log(`\n📍 Marché : ${market} (source=${RUN_SOURCE})`);
   const criteria = await loadCriteria(market);
-  const zones = await loadZones(criteria);
+  const { names: zones, minutesByCity } = await loadZones(criteria);
   const enabledSources = (criteria.sources || []).filter((s) => ADAPTERS[s]);
   console.log(`  Sites activés : ${enabledSources.join(", ") || "(aucun)"}`);
   console.log(`  Zones résolues (${criteria.zonesMinMinutes}-${criteria.zonesMaxMinutes} min) : ${zones.join(", ") || "(aucune)"}`);
@@ -120,8 +163,16 @@ async function runForMarket(market) {
     }
   }
 
+  const zoneSet = new Set(zones.map(normalizeCity));
+
   const scored = listings
-    .map((l, i) => ({ ...l, score: scoreListing(l, market, criteria), id: `${market}-${Date.now()}-${i}` }))
+    .filter((l) => zoneSet.has(normalizeCity(l.city))) // exclut le "bruit" hors-zone (ex: fallback Orpi vers le département quand une ville a 0 résultat)
+    .filter((l, i, arr) => arr.findIndex((x) => x.link === l.link) === i) // dédoublonnage par lien
+    .map((l, i) => ({
+      ...l,
+      score: scoreListing(l, market, criteria, minutesByCity.get(l.city)),
+      id: `${market}-${Date.now()}-${i}`,
+    }))
     .map((l) => ({ ...l, pricePerM2: l.surface ? Math.round(l.price / l.surface) : null }));
 
   const withPm2 = scored.filter((l) => l.pricePerM2);

@@ -31,11 +31,13 @@ async function loadZones(criteria) {
   try {
     const raw = await fs.readFile(path.join(PUBLIC_DIR, "data", "communes-temps.json"), "utf-8");
     const data = JSON.parse(raw);
-    return (data.communes || [])
-      .filter((c) => c.minutes >= criteria.zonesMinMinutes && c.minutes <= criteria.zonesMaxMinutes)
-      .map((c) => c.name);
+    const inRange = (data.communes || []).filter(
+      (c) => c.minutes >= criteria.zonesMinMinutes && c.minutes <= criteria.zonesMaxMinutes
+    );
+    const minutesByCity = new Map((data.communes || []).map((c) => [c.name, c.minutes]));
+    return { names: inRange.map((c) => c.name), minutesByCity };
   } catch {
-    return [];
+    return { names: [], minutesByCity: new Map() };
   }
 }
 
@@ -48,30 +50,57 @@ async function loadLeboncoinConfig() {
   }
 }
 
+function normalizeCity(s) {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 const DPE_ORDER = ["A", "B", "C", "D", "E", "F", "G"];
 
-function scoreListing(listing, market, criteria) {
-  let score = 5;
-  if (listing.surface) score += Math.max(-2, Math.min(2, (listing.surface - criteria.surfaceMin) / 20));
-  if (listing.price) {
-    if (listing.price > criteria.budgetMax) {
-      score -= Math.min(3, ((listing.price - criteria.budgetMax) / criteria.budgetMax) * 5);
-    } else {
-      score += 0.5;
+// Même logique de score par points que scrape.js — voir les commentaires là-bas pour
+// le détail de chaque critère.
+function scoreListing(listing, market, criteria, cityMinutes) {
+  let score = 0;
+
+  if (cityMinutes !== undefined && cityMinutes >= criteria.zonesMinMinutes && cityMinutes <= criteria.zonesMaxMinutes) {
+    score += 1;
+  }
+
+  if (listing.price !== null && listing.price !== undefined) {
+    if (listing.price <= criteria.budgetMax) {
+      score += 1;
+      if (listing.price <= criteria.budgetMax * 0.85) score += 1;
     }
   }
-  if (criteria.jardin) score += listing.jardin ? 1 : -0.5;
-  if (criteria.parking) score += listing.parking ? 1 : -0.5;
+
+  if (listing.surface !== null) {
+    if (listing.surface >= criteria.surfaceMin) {
+      score += 1;
+      if (listing.surface >= criteria.surfaceMin + 20) score += 1;
+    }
+  }
+
+  const etageMaxNum =
+    typeof criteria.etageMax === "number" ? criteria.etageMax : /rdc|1er/i.test(String(criteria.etageMax)) ? 1 : null;
+  if (listing.etage !== null && etageMaxNum !== null) {
+    if (listing.etage <= etageMaxNum) {
+      score += 1;
+      if (listing.etage === 0) score += 1;
+    }
+  }
+
   if (listing.dpe) {
     const dist = DPE_ORDER.indexOf(listing.dpe) - DPE_ORDER.indexOf(criteria.dpeMin);
-    score += dist <= 0 ? 1 : -dist * 0.5;
+    if (dist <= 0) score += 1;
   }
-  if (market === "location" && typeof criteria.etageMax === "number" && listing.etage !== null) {
-    if (listing.etage > criteria.etageMax) score -= 1.5;
-  } else if (market === "achat" && /rdc|1er/i.test(String(criteria.etageMax)) && listing.etage !== null) {
-    if (listing.etage > 1) score -= 1.5;
-  }
-  return Math.max(0, Math.min(10, Math.round(score * 10) / 10));
+
+  if (listing.jardin) score += 1;
+  if (listing.parking) score += 1;
+
+  return Math.round(score * 10) / 10;
 }
 
 function mockListings(market) {
@@ -107,7 +136,7 @@ async function runForMarket(market) {
 
   console.log(`\n📍 Marché : ${market} (source=${RUN_SOURCE})`);
   const criteria = await loadCriteria(market);
-  const zones = await loadZones(criteria);
+  const { names: zones, minutesByCity } = await loadZones(criteria);
   console.log(`  Zones résolues : ${zones.join(", ") || "(aucune)"}`);
 
   let listings = [];
@@ -125,8 +154,16 @@ async function runForMarket(market) {
     console.log(`  ${listings.length} annonces retenues, ${flaggedCount} écartée(s) comme suspectes.`);
   }
 
+  const zoneSet = new Set(zones.map(normalizeCity));
+
   const scored = listings
-    .map((l, i) => ({ ...l, score: scoreListing(l, market, criteria), id: `${market}-${Date.now()}-${i}` }))
+    .filter((l) => zoneSet.has(normalizeCity(l.city)))
+    .filter((l, i, arr) => arr.findIndex((x) => x.link === l.link) === i) // dédoublonnage par lien
+    .map((l, i) => ({
+      ...l,
+      score: scoreListing(l, market, criteria, minutesByCity.get(l.city)),
+      id: `${market}-${Date.now()}-${i}`,
+    }))
     .map((l) => ({ ...l, pricePerM2: l.surface ? Math.round(l.price / l.surface) : null }));
 
   const withPm2 = scored.filter((l) => l.pricePerM2);
