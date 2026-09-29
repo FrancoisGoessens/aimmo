@@ -1,7 +1,7 @@
 {
   "zonesMinMinutes": 0,
   "zonesMaxMinutes": 30,
-  "budgetMax": 750,
+  "budgetMax": 650,
   "surfaceMin": 60,
   "etageMax": 1,
   "jardin": false,
@@ -9,7 +9,6 @@
   "dpeMin": "E",
   "sources": [
     "orpi",
-    "fnaim",
     "square-habitat"
   ]
 }
