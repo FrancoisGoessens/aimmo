@@ -9,6 +9,7 @@
   "dpeMin": "E",
   "sources": [
     "orpi",
-    "square-habitat"
+    "square-habitat",
+    "fnaim"
   ]
 }
