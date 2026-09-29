@@ -1,0 +1,80 @@
+{
+  "id": "location-1790675595241",
+  "market": "location",
+  "date": "2026-09-29T09:53:15.241Z",
+  "source": "manual",
+  "sourcesUsed": [
+    "orpi",
+    "square-habitat"
+  ],
+  "avgPricePerM2": 0,
+  "avgPrice": 863,
+  "totalAnalyzed": 4,
+  "bestScore": 3,
+  "top10": [
+    {
+      "source": "square-habitat",
+      "type": "appartement",
+      "city": "Wimereux",
+      "title": "Studio à louer - Wimereux",
+      "price": 545,
+      "surface": null,
+      "etage": null,
+      "jardin": false,
+      "parking": false,
+      "dpe": null,
+      "link": "https://www.squarehabitat.fr/annonces/location/bien/appartement/immobilier/hauts-de-france/pas-de-calais/wimereux-62930",
+      "score": 3,
+      "id": "location-1790675595241-2",
+      "pricePerM2": null
+    },
+    {
+      "source": "square-habitat",
+      "type": "appartement",
+      "city": "Boulogne-sur-Mer",
+      "title": "Studio à louer - Boulogne-sur-Mer",
+      "price": 480,
+      "surface": null,
+      "etage": null,
+      "jardin": false,
+      "parking": false,
+      "dpe": null,
+      "link": "https://www.squarehabitat.fr/annonces/location/bien/appartement/immobilier/hauts-de-france/pas-de-calais/boulogne-sur-mer-62200",
+      "score": 3,
+      "id": "location-1790675595241-3",
+      "pricePerM2": null
+    },
+    {
+      "source": "square-habitat",
+      "type": "maison",
+      "city": "Wimereux",
+      "title": "Maison à louer - Wimereux",
+      "price": 1501,
+      "surface": null,
+      "etage": null,
+      "jardin": false,
+      "parking": false,
+      "dpe": null,
+      "link": "https://www.squarehabitat.fr/annonces/location/bien/maison/immobilier/hauts-de-france/pas-de-calais/wimereux-62930",
+      "score": 1,
+      "id": "location-1790675595241-0",
+      "pricePerM2": null
+    },
+    {
+      "source": "square-habitat",
+      "type": "appartement",
+      "city": "Saint-Martin-Boulogne",
+      "title": "Appartement à louer - Saint-Martin-Boulogne, 3 pièces",
+      "price": 925,
+      "surface": null,
+      "etage": null,
+      "jardin": false,
+      "parking": false,
+      "dpe": null,
+      "link": "https://www.squarehabitat.fr/annonces/location/bien/appartement/immobilier/hauts-de-france/pas-de-calais/saint-martin-boulogne-62280",
+      "score": 1,
+      "id": "location-1790675595241-1",
+      "pricePerM2": null
+    }
+  ]
+}
